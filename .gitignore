@@ -1,0 +1,24 @@
+# ===== PYTHON / DJANGO =====
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+db.sqlite3
+media/
+staticfiles/
+
+# Virtual environment
+myenv/
+venv/
+env/
+.env
+
+
+# ===== REACT / NODE =====
+node_modules/
+dist/
+build/
+
+# ===== OS / MISC =====
+.DS_Store
+*.log
