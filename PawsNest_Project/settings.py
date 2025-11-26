@@ -160,7 +160,7 @@ STATIC_URL = 'static/'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 CORS_ALLOWED_ORIGINS = [
-    "https://pawsnest-frontend.onrender.com/",   # your Render frontend URL
+    "https://pawsnest-frontend.onrender.com",   # your Render frontend URL
     "http://localhost:5173"
 ]
 CORS_ALLOW_CREDENTIALS = True
