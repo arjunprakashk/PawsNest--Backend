@@ -28,7 +28,13 @@ DEBUG = True
 
 import os
 
-ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "").split(",")
+ALLOWED_HOSTS = [
+    "pawsnest-backend.onrender.com",
+    "pawsnest-frontend.onrender.com",
+    "localhost",
+    "127.0.0.1"
+]
+
 
 
 # Application definition
@@ -50,7 +56,10 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
+
+
 'django.middleware.security.SecurityMiddleware',
+'whitenoise.middleware.WhiteNoiseMiddleware',
 'django.contrib.sessions.middleware.SessionMiddleware',
 'django.middleware.common.CommonMiddleware',
 'django.middleware.csrf.CsrfViewMiddleware',
@@ -59,7 +68,7 @@ MIDDLEWARE = [
 'django.middleware.clickjacking.XFrameOptionsMiddleware',
 'corsheaders.middleware.CorsMiddleware',
 
-'whitenoise.middleware.WhiteNoiseMiddleware',
+
 ]
 
 ROOT_URLCONF = 'PawsNest_Project.urls'
@@ -151,9 +160,12 @@ STATIC_URL = 'static/'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 CORS_ALLOWED_ORIGINS = [
-    "http://localhost:5173",
+    "https://pawsnest-frontend.onrender.com/",   # your Render frontend URL
+    "http://localhost:5173"
 ]
-CORS_ALLOW_ALL_ORIGINS = True
+CORS_ALLOW_CREDENTIALS = True
+
+
 
 
 MEDIA_URL = '/media/'
