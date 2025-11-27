@@ -16,37 +16,47 @@ from .models import (
 # 🔹 CustomUser Admin
 # ==========================
 
+from django.contrib import admin
+from django.contrib.auth.admin import UserAdmin
+from .models import CustomUser
+
 @admin.register(CustomUser)
-class CustomUserAdmin(admin.ModelAdmin):
+class CustomUserAdmin(UserAdmin):
     list_display = ('id', 'username', 'email', 'user_type', 'is_approved', 'is_staff')
     list_filter = ('user_type', 'is_approved', 'is_staff')
     search_fields = ('username', 'email', 'name', 'location', 'contact')
     ordering = ('id',)
 
-    # Allow direct editing from list view
-    list_editable = ('is_approved',)
+    fieldsets = (
+    (None, {'fields': ('username', 'password')}),
+    ('Personal info', {
+        'fields': (
+            'first_name',
+            'last_name',
+            'email',
+            'name',
+            'location',
+            'contact',
+        )
+    }),
+    ('User Type', {'fields': ('user_type', 'is_approved')}),
+    ('Permissions', {'fields': ('is_staff', 'is_superuser', 'groups', 'user_permissions')}),
+)
 
-    # Show fields inside the edit page
-    fields = (
-        'username',
-        'email',
-        'user_type',
-        'name',
-        'location',
-        'contact',
-        'is_approved',
-        'is_staff',
-        'is_superuser',
-        'password',
+
+    add_fieldsets = (
+        (None, {
+            'classes': ('wide',),
+            'fields': ('username', 'email', 'password1', 'password2', 'user_type', 'is_approved'),
+        }),
     )
 
-    # Add admin action
-    actions = ('approve_owners',)
+    actions = ['approve_owners']
 
     def approve_owners(self, request, queryset):
-        updated = queryset.filter(user_type='owner').update(is_approved=True)
+        owners = queryset.filter(user_type='owner')
+        updated = owners.update(is_approved=True)
         self.message_user(request, f"{updated} owner(s) approved successfully!")
-    approve_owners.short_description = "Approve selected owners"
 
 # ==========================
 # 🔹 Pet Admin
