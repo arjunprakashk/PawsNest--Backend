@@ -1,8 +1,35 @@
+import sib_api_v3_sdk
 from django.db.models.signals import pre_save, post_save
 from django.dispatch import receiver
-from django.core.mail import send_mail
 from django.conf import settings
 from .models import CustomUser, AdoptionRequest
+
+
+# -----------------------------------------------------------
+# 📌 Helper: Send email using Brevo API
+# -----------------------------------------------------------
+def send_brevo_email(to_email, subject, message):
+    try:
+        configuration = sib_api_v3_sdk.Configuration()
+        configuration.api_key['api-key'] = settings.BREVO_API_KEY
+
+        api_instance = sib_api_v3_sdk.TransactionalEmailsApi(
+            sib_api_v3_sdk.ApiClient(configuration)
+        )
+
+        email_data = sib_api_v3_sdk.SendSmtpEmail(
+            to=[{"email": to_email}],
+            subject=subject,
+            text_content=message,
+            sender={"name": "PawsNest", "email": "noreply@pawsnest.com"}
+        )
+
+        api_instance.send_transac_email(email_data)
+        print("✅ Brevo email sent to:", to_email)
+
+    except Exception as e:
+        print("❌ Brevo Email Error:", str(e))
+
 
 # -----------------------------------------------------------
 # 📩 Send email when admin approves an owner account
@@ -12,33 +39,25 @@ def send_owner_approval_email(sender, instance, **kwargs):
     """
     Send email only when an owner is newly approved by admin.
     """
-    if instance.pk:  # existing user
+    if instance.pk:  # User exists
         previous = CustomUser.objects.filter(pk=instance.pk).first()
+
         if (
             previous
-            and previous.is_approved is False
-            and instance.is_approved is True
+            and not previous.is_approved
+            and instance.is_approved
             and instance.user_type == 'owner'
         ):
-            subject = "🎉 Your Account Has Been Approved!"
+            subject = "🎉 Your Owner Account Has Been Approved!"
             message = (
                 f"Hi {instance.username},\n\n"
-                f"Great news! Your shelter account has been approved by the admin.\n"
-                f"You can now log in to your account and start managing pets and bookings.\n\n"
+                f"Your owner/shelter account has been approved by the admin.\n"
+                f"You can now log in and start managing pets and bookings.\n\n"
                 f"🐾 Welcome to PawsNest!\n\n"
                 f"— The PawsNest Team"
             )
-            try:
-                send_mail(
-                    subject,
-                    message,
-                    settings.DEFAULT_FROM_EMAIL,
-                    [instance.email],
-                    fail_silently=False,
-                )
-                print(f"✅ Sent owner approval email to {instance.email}")
-            except Exception as e:
-                print("❌ Error sending owner approval email:", e)
+
+            send_brevo_email(instance.email, subject, message)
 
 
 # -----------------------------------------------------------
@@ -46,11 +65,8 @@ def send_owner_approval_email(sender, instance, **kwargs):
 # -----------------------------------------------------------
 @receiver(post_save, sender=AdoptionRequest)
 def send_adoption_status_email(sender, instance, created, **kwargs):
-    """
-    Sends email to the adopter when their adoption request is approved or rejected.
-    """
     if created:
-        return  # skip on creation
+        return  # Do nothing on creation
 
     adopter_email = instance.adopter.email
     pet_name = instance.pet.name
@@ -59,43 +75,30 @@ def send_adoption_status_email(sender, instance, created, **kwargs):
     owner_email = owner.email
     owner_contact = getattr(owner, "contact", "Not provided")
 
-    # ✅ If approved
+    # Approved
     if instance.status == "approved":
-        subject = f"🎉 Your adoption request for {pet_name} has been approved!"
+        subject = f"🎉 Adoption Approved for {pet_name}!"
         message = (
-            f"Dear {instance.adopter.username},\n\n"
-            f"Good news! Your adoption request for '{pet_name}' has been approved by {owner_name}.\n\n"
-            f"You can now contact the owner for further details:\n"
+            f"Hi {instance.adopter.username},\n\n"
+            f"Your adoption request for '{pet_name}' has been approved by {owner_name}.\n\n"
+            f"Owner Contact:\n"
             f"📧 Email: {owner_email}\n"
-            f"📞 Contact: {owner_contact}\n\n"
-            f"Thank you for choosing to adopt — you're giving a pet a loving home ❤️\n\n"
-            f"– The PawsNest Team"
+            f"📞 Phone: {owner_contact}\n\n"
+            f"Thank you for adopting a pet ❤️\n\n"
+            f"— The PawsNest Team"
         )
 
-    # ❌ If rejected
+    # Rejected
     elif instance.status == "rejected":
-        subject = f"😿 Your adoption request for {pet_name} has been rejected"
+        subject = f"😿 Adoption Request Rejected for {pet_name}"
         message = (
-            f"Dear {instance.adopter.username},\n\n"
-            f"We're sorry to inform you that your adoption request for '{pet_name}' "
-            f"was not approved by {owner_name}.\n\n"
-            f"Don't be discouraged — there are many other pets looking for a loving home! 💕\n"
-            f"You can browse other available pets on our platform anytime.\n\n"
+            f"Hi {instance.adopter.username},\n\n"
+            f"Your adoption request for '{pet_name}' was not approved.\n\n"
+            f"Please try adopting another pet ❤️\n\n"
             f"— The PawsNest Team"
         )
 
     else:
-        return  # do nothing if status is 'pending' or unchanged
+        return  # Pending / unchanged
 
-    # Send email
-    try:
-        send_mail(
-            subject,
-            message,
-            settings.DEFAULT_FROM_EMAIL,
-            [adopter_email],
-            fail_silently=False,
-        )
-        print(f"✅ Sent adoption status email ({instance.status}) to {adopter_email}")
-    except Exception as e:
-        print("❌ Error sending adoption status email:", e)
+    send_brevo_email(adopter_email, subject, message)

@@ -204,11 +204,13 @@ RAZORPAY_KEY_SECRET = "cEXr4wVLvhIXoFmehPHF8vzi"
 
 
 #Email 
-EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
-EMAIL_HOST = "smtp.gmail.com"
-EMAIL_PORT = 587
-EMAIL_USE_TLS = True
-EMAIL_HOST_USER = os.environ.get("EMAIL_HOST_USER")
-EMAIL_HOST_PASSWORD = os.environ.get("EMAIL_HOST_PASSWORD")
-DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
+# BREVO Email API (Sendinblue)
+import os
+import sib_api_v3_sdk
+from sib_api_v3_sdk import Configuration
+
+BREVO_API_KEY = os.environ.get("BREVO_API_KEY")  # Add this to Render
+
+configuration = Configuration()
+configuration.api_key['api-key'] = BREVO_API_KEY
 
