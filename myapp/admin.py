@@ -15,6 +15,7 @@ from .models import (
 # ==========================
 # 🔹 CustomUser Admin
 # ==========================
+
 @admin.register(CustomUser)
 class CustomUserAdmin(admin.ModelAdmin):
     list_display = ('id', 'username', 'email', 'user_type', 'is_approved', 'is_staff')
@@ -22,13 +23,30 @@ class CustomUserAdmin(admin.ModelAdmin):
     search_fields = ('username', 'email', 'name', 'location', 'contact')
     ordering = ('id',)
 
+    # Allow direct editing from list view
+    list_editable = ('is_approved',)
 
-    
+    # Show fields inside the edit page
+    fields = (
+        'username',
+        'email',
+        'user_type',
+        'name',
+        'location',
+        'contact',
+        'is_approved',
+        'is_staff',
+        'is_superuser',
+        'password',
+    )
+
+    # Add admin action
+    actions = ('approve_owners',)
+
     def approve_owners(self, request, queryset):
-        updated = queryset.update(is_approved=True)
+        updated = queryset.filter(user_type='owner').update(is_approved=True)
         self.message_user(request, f"{updated} owner(s) approved successfully!")
     approve_owners.short_description = "Approve selected owners"
-
 
 # ==========================
 # 🔹 Pet Admin
